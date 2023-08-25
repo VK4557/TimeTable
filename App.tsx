@@ -5,194 +5,107 @@
  * @format
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
-  FlatList,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
+  Pressable,
+  Dimensions,
   Text,
+  GestureResponderEvent,
   View,
 } from 'react-native';
+import {NavigationContainer, useIsFocused} from '@react-navigation/native';
+import {
+  createBottomTabNavigator,
+  BottomTabBarButtonProps,
+} from '@react-navigation/bottom-tabs';
+import HomeScreen from './modules/home';
+import ChatScreen from './modules/chat';
 
-import dayjs from 'dayjs';
+const Bottom = createBottomTabNavigator();
 
-const data = [
-  {
-    user: 'Sahil',
-    data: [
-      {
-        date: 6,
-        value: 'SL',
-      },
-      {
-        date: 23,
-        value: 'WFH',
-      },
-    ],
-  },
-  {
-    user: 'Vijay',
-    data: [
-      {
-        date: 3,
-        value: 'SL',
-      },
-      {
-        date: 19,
-        value: 'SL',
-      },
-      {
-        date: 30,
-        value: 'SL',
-      },
-    ],
-  },
-  {
-    user: 'Naresh',
-    data: [
-      {
-        date: 5,
-        value: 'WFH',
-      },
-    ],
-  },
-  {
-    user: 'Vishal',
-    data: [
-      {
-        date: 1,
-        value: 'SL',
-      },
-    ],
-  },
-  {
-    user: 'Sudhir',
-    data: [
-      {
-        date: 2,
-        value: 'WFH',
-      },
-    ],
-  },
-  {
-    user: 'Rahul',
-    data: [
-      {
-        date: 31,
-        value: 'SL',
-      },
-    ],
-  },
-];
+const CustomBottomBtn = (props: BottomTabBarButtonProps) => {
+  const focused = useIsFocused();
+  const {onPress} = props;
+  const [minutes, setMinutes] = useState(0);
+  const [seconds, setSeconds] = useState(0);
+  const [event, setEvent] = useState<GestureResponderEvent | null>(null);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (seconds > 0) {
+        setSeconds(seconds - 1);
+      }
 
-const RenderDataRow = ({userData}: any) => {
-  const monthDays = dayjs().daysInMonth();
+      if (seconds === 0) {
+        if (minutes === 0) {
+          clearInterval(interval);
+        } else {
+          setSeconds(59);
+          setMinutes(minutes - 1);
+        }
+      }
+    }, 1000);
 
-  const renderTableView = ({item, index}: any) => {
-    const val = userData.data.filter((val: any) => val.date - 1 === index)[0]
-      ?.value;
-    return (
-      <View
-        style={[
-          styles.daysBox,
-          {
-            backgroundColor:
-              val === 'SL'
-                ? 'red'
-                : val === 'WFH'
-                ? '#02d1e8'
-                : 'rgba(135, 206, 235, .4)',
-            borderWidth: 0.5,
-            borderColor: 'gray',
-          },
-        ]}>
-        <Text style={styles.userDataLabel}>{val}</Text>
-      </View>
-    );
+    return () => {
+      clearInterval(interval);
+    };
+  });
+
+  const starTime = () => {
+    setMinutes(4);
+    setSeconds(59);
   };
 
   return (
-    <FlatList
-      data={Array(monthDays).fill(0)}
-      keyExtractor={(itm, i) => 'key-' + i}
-      renderItem={renderTableView}
-      contentContainerStyle={{flexGrow: 1, borderWidth: 0}}
-      horizontal
-      scrollEnabled={false}
-    />
+    <Pressable
+      {...props}
+      onPress={e => {
+        if (minutes || seconds || focused) return;
+        if (event) {
+          onPress && e && onPress(e);
+          setEvent(null);
+        } else {
+          starTime();
+          setEvent(e);
+        }
+      }}
+      style={{
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        width: Dimensions.get('window').width / 4,
+        backgroundColor: !event ? 'red' : 'blue',
+      }}>
+      {seconds > 0 || minutes > 0 ? (
+        <>
+          <Text style={{position: 'absolute', top: -20}}>
+            {minutes < 10 ? `0${minutes}` : minutes}:
+            {seconds < 10 ? `0${seconds}` : seconds}
+          </Text>
+          <Text>Chat</Text>
+        </>
+      ) : (
+        <Text>Chat</Text>
+      )}
+    </Pressable>
   );
 };
 
-const BoxWidth = 55;
-const BoxHeight = 50;
-
 function App(): JSX.Element {
-  const monthDays = dayjs().daysInMonth();
-
   return (
-    <SafeAreaView>
-      <Text style={styles.monthHeading}>{dayjs().format('MMMM, YYYY')}</Text>
-      <ScrollView style={{}}>
-        <View style={styles.row}>
-          <View style={styles.userListView}>
-            <FlatList
-              data={data}
-              keyExtractor={(itm, i) => 'keyUser-' + i}
-              renderItem={({item, index}: any) => (
-                <View style={styles.userBox}>
-                  <Text style={styles.userLabel}>{item.user}</Text>
-                </View>
-              )}
-              contentContainerStyle={{flexGrow: 1}}
-              scrollEnabled={false}
-            />
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View>
-              <FlatList
-                data={Array(monthDays).fill(0)}
-                keyExtractor={(itm, i) => 'key1-' + i}
-                renderItem={({item, index}: any) => (
-                  <View style={styles.daysBox}>
-                    <Text style={{color: 'black'}}>{index + 1}</Text>
-                  </View>
-                )}
-                contentContainerStyle={{
-                  flexGrow: 1,
-                }}
-                numColumns={monthDays}
-                scrollEnabled={false}
-              />
-              {data.map((user, index) => (
-                <RenderDataRow userData={user} key={index} />
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <NavigationContainer>
+      <Bottom.Navigator>
+        <Bottom.Screen name="Home" component={HomeScreen} />
+        <Bottom.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={{
+            tabBarButton: props => <CustomBottomBtn {...props} />,
+          }}
+        />
+        <Bottom.Screen name="Home2" component={HomeScreen} />
+        <Bottom.Screen name="Home3" component={HomeScreen} />
+      </Bottom.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {flexDirection: 'row'},
-  monthHeading: {fontSize: 25, fontWeight: '600'},
-  userListView: {marginTop: BoxHeight},
-  userBox: {
-    height: BoxHeight,
-    width: 80,
-    paddingLeft: 10,
-    justifyContent: 'center',
-  },
-  userLabel: {fontWeight: '600', color: 'black'},
-  daysBox: {
-    height: BoxHeight,
-    width: BoxWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userDataLabel: {fontWeight: '600', color: 'white'},
-});
 
 export default App;
